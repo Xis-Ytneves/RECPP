@@ -36,24 +36,24 @@ VtableScanner::getVtableMethodsCount (
         // First iteration
         if (startTable == BADADDR) {
             startTable = curAddress;
-            if (!(hasRef (flags) && (has_name (flags) || (flags & FF_LABL)))) {
+            if (!(has_xref(flags) && (has_name (flags) || (flags & FF_LABL)))) {
                 // Start of vtable should have a xref and a name (auto or manual)
                 return 0;
             }
         }
-        else if (hasRef (flags)) {
+        else if (has_xref(flags)) {
             // Might mean start of next vtable
             break;
         }
         
-        if (!hasValue (flags) || !isData (flags)) {
+        if (!has_value(flags) || !is_data (flags)) {
             break;
         }
         
-        if ((curEntry = get_long (curAddress))) {
+        if ((curEntry = get_dword (curAddress))) {
             flags = IDAUtils::GetFlags (curEntry);
             
-            if (!hasValue (flags) || !isCode (flags) || get_long (curEntry) == 0) {
+            if (!has_value(flags) || !is_code(flags) || get_dword (curEntry) == 0) {
                 break;
             }
         }
@@ -90,7 +90,7 @@ VtableScanner::checkVtable (
         name = NULL;
     }
     
-    endTable = get_long (address - 4);
+    endTable = get_dword (address - 4);
     
     char buffer[4096] = {0};
     if (CompleteObjectLocator::isValid (endTable)) {
@@ -104,8 +104,8 @@ VtableScanner::checkVtable (
         }
 
         // only output object tree for main vtable
-        if (get_long (endTable + 4) == 0) {
-            CRTTIClassHierarchyDescriptor::parse2 (get_long (endTable + 16));
+        if (get_dword (endTable + 4) == 0) {
+            CRTTIClassHierarchyDescriptor::parse2 (get_dword (endTable + 16));
         }
 
         IDAUtils::MakeName (address, name);
@@ -150,7 +150,7 @@ VtableScanner::checkVtable (
 
     while (vtableMethodsCount > 0)
     {
-        p = get_long (endTable);
+        p = get_dword (endTable);
         if (IDAUtils::GetFunctionFlags(p) == -1) {
             IDAUtils::MakeCode(p);
             IDAUtils::MakeFunction (p, BADADDR);
@@ -179,10 +179,10 @@ VtableScanner::scan (
         return false;
     }
 
-    ea_t rMin = rdataSeg->startEA, 
-         rMax = rdataSeg->endEA, 
-         cMin = textSeg->startEA, 
-         cMax = textSeg->endEA;
+    ea_t rMin = rdataSeg->start_ea, 
+         rMax = rdataSeg->end_ea, 
+         cMin = textSeg->start_ea, 
+         cMax = textSeg->end_ea;
     
     if (rMin == 0) {
         rMin = cMin; 
@@ -193,7 +193,7 @@ VtableScanner::scan (
     ea_t curDword;
 
     while (curAddress < rMax) {
-        curDword = get_long (curAddress);
+        curDword = get_dword (curAddress);
 
         // Methods should reside in .text
         if (curDword >= cMin && curDword < cMax) {

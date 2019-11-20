@@ -20,7 +20,7 @@ CompleteObjectLocator::parse (
     }
     
     char buffer2[2048] = {0};
-    char *cloName = IDAUtils::GetAsciizStr (get_long (address + 12) + 8, buffer2, sizeof (buffer2));
+    char *cloName = IDAUtils::GetAsciizStr (get_dword (address + 12) + 8, buffer2, sizeof (buffer2));
 
     IDAUtils::DwordCmt (address, "signature");
     IDAUtils::DwordCmt (address + 4, "offset");
@@ -28,20 +28,20 @@ CompleteObjectLocator::parse (
     IDAUtils::OffCmt (address + 12, "pTypeDescriptor");
     IDAUtils::OffCmt (address + 16, "pClassDescriptor");
 
-    CRTTIClassHierarchyDescriptor::parse (get_long (address + 16));
+    CRTTIClassHierarchyDescriptor::parse (get_dword (address + 16));
 }
 
 bool
 CompleteObjectLocator::isValid (
     ea_t address
 ) {
-    ea_t x = get_long (address + 12);
+    ea_t x = get_dword (address + 12);
 
     if (!x || (x == BADADDR)) {
         return 0;
     }
 
-    x = get_long (x + 8);
+    x = get_dword (x + 8);
 
                           // .?A
     if ((x & 0xFFFFFF) == 0x413F2E) {
@@ -58,7 +58,7 @@ CompleteObjectLocator::get_type_name_by_col (
     char *buffer,
     size_t bufferSize
 ) {
-    ea_t x = get_long (colAddress + 12);
+    ea_t x = get_dword (colAddress + 12);
     
     if (x == BADADDR || !x) {
         return NULL;

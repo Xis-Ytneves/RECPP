@@ -22,22 +22,22 @@ CRTTIClassHierarchyDescriptor::parse (
 
     char buffer[2048] = {0};
 
-    ea_t a = get_long (address + 4);
+    ea_t a = get_dword (address + 4);
 
     IDAUtils::DwordCmt(address, "signature");
     IDAUtils::DwordCmt(address + 4, "attributes");
     IDAUtils::DwordCmt(address + 8, "numBaseClasses");
     IDAUtils::OffCmt(address + 12, "pBaseClassArray");
 
-    a = get_long (address + 12);
-    ea_t n = get_long (address + 8);
+    a = get_dword (address + 12);
+    ea_t n = get_dword (address + 8);
     ea_t i = 0;
     
     // IDAUtils::DumpNestedClass (a, indent, n);
 
     while (i < n) 
     {
-        ea_t p = get_long (a);
+        ea_t p = get_dword (a);
 
         sprintf_s (buffer, sizeof (buffer), "BaseClass[%02d]", i);
         IDAUtils::OffCmt(a, buffer);

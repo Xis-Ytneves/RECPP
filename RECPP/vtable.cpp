@@ -112,7 +112,7 @@ Vtable::filterClassName (
 
 
 /*
- * @brief : Check if get_long (vtable-4) points to typeinfo record and extract the type name from it
+ * @brief : Check if get_dword (vtable-4) points to typeinfo record and extract the type name from it
  * @return The type name, or NULL if an error occured
  */
 char *
@@ -125,13 +125,13 @@ Vtable::getTypeName (
         return NULL;
     }
 
-    ea_t x = get_long (vtable - 4);
+    ea_t x = get_dword (vtable - 4);
 
     if (!x || (x == BADADDR)) {
         return NULL;
     }
 
-    x = get_long (x + 12);
+    x = get_dword (x + 12);
 
     if (!x || (x == BADADDR)) {
         return NULL;
@@ -163,10 +163,10 @@ Vtable::getClassName2 (
     char vtableType [4096] = {0};
 
     CompleteObjectLocator::get_type_name_by_col (colAddress, vtableType, sizeof (vtableType));
-    ea_t i = get_long (colAddress + 16); // CHD
-    i = get_long (i+4);  // Attributes
+    ea_t i = get_dword (colAddress + 16); // CHD
+    i = get_dword (i+4);  // Attributes
 
-    if ((i & 3) == 0 && get_long (colAddress + 4) == 0) { 
+    if ((i & 3) == 0 && get_dword (colAddress + 4) == 0) { 
         //Single inheritance, so we don't need to worry about duplicate names (several vtables)
         sprintf_s (result, resultSize, "??_7%s6B@", &vtableType[4]);
         return result;
@@ -208,21 +208,21 @@ Vtable::getClassName (
     char *result,
     size_t resultSize
 ) {
-    ea_t offset = get_long (address + 4);
-    address = get_long (address + 16); // Class Hierarchy Descriptor
+    ea_t offset = get_dword (address + 4);
+    address = get_dword (address + 16); // Class Hierarchy Descriptor
 
-    ea_t a = get_long (address + 12); // pBaseClassArray
-    size_t numBaseClasses = get_long (address + 8);  //numBaseClasses
+    ea_t a = get_dword (address + 12); // pBaseClassArray
+    size_t numBaseClasses = get_dword (address + 8);  //numBaseClasses
     size_t i = 0;
     result[0] = '\0';
     
     while (i < numBaseClasses) 
     {
-        ea_t p = get_long (a);
+        ea_t p = get_dword (a);
 
-        if (get_long (p + 8) == offset) {
+        if (get_dword (p + 8) == offset) {
             // Found it
-            return IDAUtils::GetAsciizStr (get_long (p) + 8, result, resultSize);
+            return IDAUtils::GetAsciizStr (get_dword (p) + 8, result, resultSize);
         }
 
         i++;
@@ -231,14 +231,14 @@ Vtable::getClassName (
 
     // Didn't find matching one, let's get the first vbase
     i = 0;
-    a = get_long (address + 12);
+    a = get_dword (address + 12);
 
     while (i < numBaseClasses) 
     {
-        ea_t p = get_long (a);
+        ea_t p = get_dword (a);
 
-        if (get_long (p + 12) != -1)  {
-            return IDAUtils::GetAsciizStr (get_long (p) + 8, result, resultSize);
+        if (get_dword (p + 12) != -1)  {
+            return IDAUtils::GetAsciizStr (get_dword (p) + 8, result, resultSize);
         }
 
         i++;
@@ -277,7 +277,7 @@ Vtable::createStruct (
     for (size_t i = 0 ; i < methodsCount ; i++)
     {
         char methodName[4096] = {0};
-        ea_t methodAddress = get_long (vtableAddress + i * 4);
+        ea_t methodAddress = get_dword (vtableAddress + i * 4);
         if (!methodAddress) {
             continue;
         }
@@ -309,10 +309,10 @@ Vtable::parse (
     {
         IDAUtils::Unknown (address - 4, 4);
         IDAUtils::SoftOff (address - 4);
-        ea_t i = get_long (address - 4);  // COL
-        ea_t s2 = get_long (i + 4); // offset
-        i = get_long (i + 16); // CHD
-        i = get_long (i + 4);  // Attributes
+        ea_t i = get_dword (address - 4);  // COL
+        ea_t s2 = get_dword (i + 4); // offset
+        i = get_dword (i + 16); // CHD
+        i = get_dword (i + 4);  // Attributes
 
         char className [4096] = {0};
 
@@ -324,20 +324,20 @@ Vtable::parse (
             IDAUtils::MakeName (address, classNameMangled);
             
             // Get the demangled name
-            get_short_name (BADADDR, address, className, sizeof (className));
+            className = get_short_name(address, BADADDR/*, sizeof (className)*/);
 
             result = new Vtable (address, className, methodsCount);
 
             // Set the RTTI Complete Object Locator name
             sprintf_s (COLName, sizeof (COLName), "??_R4%s6B@", &typeName[4]);
-            IDAUtils::MakeName (get_long (address - 4), COLName);
+            IDAUtils::MakeName (get_dword (address - 4), COLName);
         }
 
         else {
             // Multiple inheritance
             char buffer [4096] = {0};
             char vtableName [4096] = {0};
-            getClassName (get_long (address - 4), vtableName, sizeof (vtableName));
+            getClassName (get_dword (address - 4), vtableName, sizeof (vtableName));
             sprintf_s (buffer, sizeof (buffer), "%s6B%s@", &typeName[4], &vtableName[4]);
             sprintf_s (vtableName, sizeof (vtableName),  "??_7%s", buffer);
             sprintf_s (COLName, sizeof (COLName), "??_R4%s", buffer);
@@ -346,13 +346,13 @@ Vtable::parse (
             IDAUtils::MakeName (address, vtableName);
 
             // Get the demangled name
-            get_short_name (BADADDR, address, className, sizeof (className));
+			className = get_short_name(address, BADADDR/*sizeof (className)*/);
             
             // Filter the class name
             result = new Vtable (address, className, methodsCount);
             
             // Set the RTTI Complete Object Locator name
-            IDAUtils::MakeName (get_long (address - 4), COLName);
+            IDAUtils::MakeName (get_dword (address - 4), COLName);
         }
 
         if (result != NULL) {

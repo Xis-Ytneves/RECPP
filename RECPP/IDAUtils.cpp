@@ -3,6 +3,9 @@
 #include "frame.hpp"
 #include "struct.hpp"
 
+#define FF_DWRD     0x20000000LU
+#define FF_STRU     0x60000000LU
+
 int
 str_n_pos (char *str, const char *search, int len_str)
 {
@@ -131,7 +134,7 @@ bool
 IDAUtils::MakeDword (
     ea_t address
 ) {
-    return do_data_ex (address, FF_DWRD, 4, BADADDR);
+    return create_data (address, FF_DWRD, 4, BADADDR);
 }
 
 void 
@@ -143,7 +146,7 @@ IDAUtils::Unknown (
         return;
     }
 
-    do_unknown_range (address, size, 0);
+	del_items(address, size, 0);
 }
 
 bool
@@ -196,21 +199,21 @@ IDAUtils::GetFirstIndex (
     int id
 ) {
     netnode n(id);
-    return n.sup1st((char) tag);
+    return n.supfirst((char) tag);
 }
 
 int
 IDAUtils::MakeCode (
     ea_t address
 ) {
-    return ua_code (address);
+    return create_insn(address);
 }
 
 uint32
 IDAUtils::Dword (
     ea_t address
 ) {
-    return get_long (address);
+    return get_dword (address);
 }
 
 tid_t
@@ -231,7 +234,7 @@ IDAUtils::GetFrameArgsSize (
         return 0;
     }
 
-    area_t range;
+	range_t range;
     get_frame_part (f, FPC_ARGS, &range);
     return range.size ();
 }
@@ -241,7 +244,7 @@ IDAUtils::GetFrameLvarSize (
     ea_t address
 ) {
     func_t *f = get_func (address);
-    area_t range;
+	range_t range;
     get_frame_part (f, FPC_LVARS, &range);
     return range.size ();
 }
@@ -251,7 +254,7 @@ IDAUtils::GetFrameRegsSize (
     ea_t address
 ) {
     func_t *f = get_func (address);
-    area_t range;
+	range_t range;
     get_frame_part (f, FPC_SAVREGS, &range);
     return range.size ();
 }
@@ -408,7 +411,7 @@ IDAUtils::AddStrucMember (
     long type,
     long nbytes
 ) {
-    typeinfo_t mt;
+	opinfo_t mt;
     // Calls an internal function to initialize mt using typeid
     return add_struc_member (get_struc (id), name, offset, flag, &mt, nbytes);
 }
@@ -435,10 +438,11 @@ IDAUtils::GetMemberName (
         buffer[0] = '\0';
         return buffer;
     }
-
+	
     tid_t memberId = m->id;
-    get_member_name (memberId, buffer, bufferSize);
-    return buffer;
+    qstring tempq = get_member_name(memberId/*, buffer, bufferSize*/);
+	char* returnbuff = const_cast<char*>(tempq.c_str());
+    return returnbuff;
 }
 
 bool
@@ -471,7 +475,6 @@ IDAUtils::ForceMethodMember (
     size_t nameSize
 ) {
     int status;
-
     char completeName[4096] = {0};
     if ((status = IDAUtils::AddStrucMember (id, name, offset, FF_DWRD | FF_DATA, -1, 4)) != 0) {
         if (status != STRUC_ERROR_MEMBER_OFFSET && status != STRUC_ERROR_MEMBER_NAME) {
@@ -688,7 +691,7 @@ unsigned char
 IDAUtils::Byte (
     ea_t address
 ) {
-    return get_full_byte(address);
+    return get_wide_byte(address);
 }
 
 bool
@@ -715,7 +718,7 @@ IDAUtils::GetNextIndex (
     nodeidx_t idx
 ) {
     netnode n(id);
-    return n.supnxt (idx, (char) tag);
+    return n.supnext(idx, (char) tag);
 }
 
 ea_t
@@ -769,8 +772,9 @@ IDAUtils::Name (
     char *buffer,
     size_t bufferSize
 ) {
-    char *result = get_name (BADADDR, address, buffer, bufferSize);
-    if (!result) {
+     qstring TempQ = get_name(address, BADADDR/*BADADDR, address, buffer, bufferSize*/);
+	 char* result = const_cast<char*>(TempQ.c_str());
+	 if (!result) {
         buffer[0] = '\0';
     }
     return buffer;
@@ -780,7 +784,7 @@ ea_t
 IDAUtils::PrevFunction (
     ea_t address
 ) {
-    return get_prev_func (address)->startEA;
+    return get_prev_func (address)->start_ea;
 }
 
 ushort
@@ -799,7 +803,7 @@ flags_t
 IDAUtils::GetFlags (
     ea_t address
 ) {
-    return getFlags (address);
+    return get_full_flags(address);
 }
 
 bool
@@ -831,7 +835,7 @@ IDAUtils::Demangle (
     char *buffer,
     size_t bufferSize
 ) {
-    demangle_name (buffer, bufferSize, mangledName, disable_mask);
+    demangle_name (/*buffer, bufferSize,*/mangledName, disable_mask);
     return buffer;
 }
 
@@ -871,7 +875,7 @@ IDAUtils::OpOff (
         return op_offset (address, n, REF_OFF32, BADADDR, base) ? true : false;
     }
 
-    return noType (address, n);
+    return clr_op_type(address, n);
 }
 
 bool
@@ -887,7 +891,7 @@ IDAUtils::SoftOff (
         return false;
     }
    
-    if (get_long (address) > 0 && get_long (address) <= inf.maxEA) {
+    if (get_dword (address) > 0 && get_dword (address) <= inf.max_ea) {
         return OpOff (address, 0, 0);
     }
 
@@ -936,7 +940,7 @@ IDAUtils::MakeName (
     ea_t address,
     char *name
 ) {
-    return do_name_anyway (address, name, 0);
+    return force_name(address, name, 0);
 }
 
 bool
@@ -944,11 +948,11 @@ IDAUtils::MakeArray (
     ea_t address,
     size_t nItems
 ) {
-    typeinfo_t ti;
-    flags_t f = get_flags_novalue (address);
-    get_typeinfo (address, 0, f, &ti);
-    asize_t sz = get_data_elsize (address, f, &ti);
-    return do_data_ex (address, f, sz * nItems, ti.tid);
+	opinfo_t ti;
+    flags_t f = get_flags(address);
+	get_opinfo(&ti, address, 0, f,);
+    asize_t sz = nItems * get_data_elsize (address, f, &ti);
+    return create_data (address, f, sz * nItems, ti.tid);
 }
 
 bool
@@ -977,7 +981,7 @@ IDAUtils::MakeUnkn (
     ea_t address,
     int flags
 ) {
-    return do_unknown(address, flags);
+    /*return*/ del_items(address, flags);
 }
 
 int
@@ -1009,7 +1013,7 @@ IDAUtils::MakeStr (
     long endAddress
 ) {
     int len = endAddress == -1 ? 0 : endAddress - address;
-    return make_ascii_string (address, len, ASCSTR_C);
+    return create_strlit(address, len, STRTYPE_C);
 }
 
 char *

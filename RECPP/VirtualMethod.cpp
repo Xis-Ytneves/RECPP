@@ -20,7 +20,7 @@ VirtualMethod::VirtualMethod (
     vftableAddress (vftableAddress)
 {
     this->methodAddress = vftableAddress + methodIndex * 4;
-    this->methodStart = get_long (methodAddress);
+    this->methodStart = get_dword (methodAddress);
 
     // Check current method name
     char methodName[4096];

@@ -73,7 +73,7 @@ GraphInfo::GraphInfo (
         return;
     }
 
-    this->func_ea = this->function->startEA;
+    this->func_ea = this->function->start_ea;
 
     static funcs_walk_options_t fg_opts = {
         FWO_VERSION,       // version

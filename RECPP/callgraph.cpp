@@ -30,7 +30,7 @@ CallGraph::walk_func (
     int level
 ) {
     // add a node for this function
-    int id = add (func->startEA);
+    int id = add (func->start_ea);
 
     func_item_iterator_t fii;
 
@@ -61,7 +61,7 @@ CallGraph::walk_func (
                            && (level > opt->recurse_limit));
                 }
 
-                id2 = (skip) ? add (f->startEA) 
+                id2 = (skip) ? add (f->start_ea) 
                              : walk_func (f, opt, level + 1);
             }
 
@@ -162,17 +162,18 @@ CallGraph::get_info (
         funcinfo_t fi;
 
         // get name
-        char buf [MAXSTR];
-        if (get_func_name (it_ea->second, buf, sizeof (buf)) == NULL) {
+        // char buf [MAXSTR];
+		qstring *buf;
+        if (get_func_name(buf, it_ea->second/*, buf, sizeof (buf)) == NULL*/) {
             fi.name = "?";
         } 
         else {
             fi.name = buf;
         }
         // get color
-        fi.color = calc_bg_color (pfn->startEA);
+        fi.color = calc_bg_color (pfn->start_ea);
 
-        fi.ea = pfn->startEA;
+        fi.ea = pfn->start_ea;
 
         // Get function pointers
         fi.func = pfn;

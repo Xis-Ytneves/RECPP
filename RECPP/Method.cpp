@@ -20,7 +20,7 @@ Method::Method (
 ) {
     if (makeName) {
         this->methodName = IDAUtils::string_sprintf ("%s::sub_%x", className, methodAddress);
-        IDAUtils::MakeName (get_long (methodAddress), (char *) this->methodName.c_str());
+        IDAUtils::MakeName (get_dword (methodAddress), (char *) this->methodName.c_str());
     }
 
     this->methodAddress = methodAddress;

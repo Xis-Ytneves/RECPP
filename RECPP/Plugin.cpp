@@ -36,25 +36,26 @@ user_menu_scan_vftable (
 
 // Callbacks
 
-static int idaapi 
+static hook_cb_t idaapi
 ui_callback (
     void *ud, 
     int notification_code, 
     va_list va
 ) {
-    TCustomControl *view = va_arg (va, TCustomControl *);
-
+	TWidget*view = va_arg (va, TWidget*);
+	const char* title = "Scan and rename vftables";
     switch (notification_code)
     {
-        case view_popup:
-            add_custom_viewer_popup_item (view, "Scan and rename vftables", "", user_menu_scan_vftable, ud);
+        case view_created:
+			attach_action_to_popup(view, NULL, title);
+			user_menu_scan_vftable(ud);
         break;
     }
 
     return 0;
 }
 
-static int idaapi hx_callback (void *ud, hexrays_event_t event, va_list va)
+static int idaapi hx_callback_i (void *ud, hexrays_event_t event, va_list va)
 {
     if (event == hxe_maturity)
     {
@@ -69,6 +70,8 @@ static int idaapi hx_callback (void *ud, hexrays_event_t event, va_list va)
 
     return 0;
 }
+
+hexrays_cb_t* hx_callback = hx_callback;
 
 /*
  * @brief Initialize the RECPP plugin 
@@ -89,7 +92,7 @@ init (
          " +-`  +-` ------` +-----` +-`     +-`     \n");
 
     DecMap *decompilationMap = new DecMap ();
-    hook_to_notification_point (HT_VIEW, ui_callback, decompilationMap); 
+    hook_to_notification_point(HT_VIEW, ui_callback, decompilationMap);
     install_hexrays_callback (hx_callback, decompilationMap);
     inited = true;
 
@@ -112,9 +115,9 @@ term (
 /*
  * @brief Run the RECPP plugin 
  */
-void idaapi 
+bool idaapi 
 run (
-    int __unused
+    size_t __unused
 ) {
 }
 

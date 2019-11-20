@@ -34,12 +34,12 @@ CRTTIBaseClassDescriptor::parse (
     IDAUtils::DwordArrayCmt(address + 8, 3, "PMD where");
     IDAUtils::DwordCmt(address + 20, "attributes");
 
-    char *s = CTypeDescriptor::parse (get_long (address), buffer3, bufferSize);
+    char *s = CTypeDescriptor::parse (get_dword (address), buffer3, bufferSize);
     //??_R1A@?0A@A@B@@8 = B::`RTTI Base Class Descriptor at (0,-1,0,0)'
-    IDAUtils::MangleNumber (get_long (address + 8), m1, sizeof (m1));
-    IDAUtils::MangleNumber (get_long (address + 12), m2, sizeof (m2));
-    IDAUtils::MangleNumber (get_long (address + 16), m3, sizeof (m3));
-    IDAUtils::MangleNumber (get_long (address + 20), m4, sizeof (m4));
+    IDAUtils::MangleNumber (get_dword (address + 8), m1, sizeof (m1));
+    IDAUtils::MangleNumber (get_dword (address + 12), m2, sizeof (m2));
+    IDAUtils::MangleNumber (get_dword (address + 16), m3, sizeof (m3));
+    IDAUtils::MangleNumber (get_dword (address + 20), m4, sizeof (m4));
 
     sprintf_s (buffer, sizeof (buffer), "??_R1%s%s%s%s%s8", m1, m2, m3, m4, &s[4]);
     IDAUtils::MakeName (address, buffer);

@@ -61,7 +61,7 @@ public:
     );
 
     /*
-     * @brief : Check if get_long (vtable-4) points to typeinfo record and extract the type name from it
+     * @brief : Check if get_dword (vtable-4) points to typeinfo record and extract the type name from it
      * @return The type name, or NULL if an error occured
      */
     static char *
